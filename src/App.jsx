@@ -298,7 +298,7 @@ const Tag = ({ c, children }) => {
 };
 
 const Card = ({ children, dark, redBg, blueBg, style }) => (
-  <div style={{ background: dark ? "#1a1714" : redBg ? "#fdf0ee" : blueBg ? "#eef4fa" : "white", color: dark ? "white" : "#1a1714", padding: "1.3rem 1.5rem", ...style }}>
+  <div style={{ background: dark ? "#1a1714" : redBg ? "#fdf0ee" : blueBg ? "#eef4fa" : "white", color: dark ? "white" : "#1a1714", padding: "1.3rem 1.5rem", minWidth: 0, overflow: "hidden", ...style }}>
     {children}
   </div>
 );
@@ -801,8 +801,8 @@ export default function App() {
                 <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Detalle · {anoSel}</div>
                 <div style={{ fontFamily: "Georgia,serif", fontSize: "1rem", fontWeight: 700, marginBottom: 16 }}>Ejecución Presupuestaria por Rubro</div>
                 {datosAnio && datosAnio.tableRows.length > 0 ? (
-                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", display: "block", width: "100%", maxWidth: "100%" }}>
+                  <table style={{ borderCollapse: "collapse", minWidth: 480, width: "max-content", maxWidth: "100%" }}>
                     <thead>
                       <tr>
                         {["Rubro", "Vigente", "Devengado", "Ejecución", `Var. real vigente vs ${anoSel - 1}`].map((h) => (
