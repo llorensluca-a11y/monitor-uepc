@@ -435,9 +435,11 @@ export default function App() {
         .grid-2   { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #ddd8d0; }
         .grid-1   { display: grid; grid-template-columns: 1fr; gap: 1px; background: #ddd8d0; }
         .sit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #ddd8d0; }
+        .ind-grid { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 1px; background: #ddd8d0; flex: 1; }
         @media (max-width: 600px) {
           .grid-1-2, .grid-3, .grid-2 { grid-template-columns: 1fr !important; }
           .sit-grid { grid-template-columns: 1fr !important; }
+          .ind-grid { grid-template-columns: 1fr !important; }
           .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
           .hide-mobile { display: none !important; }
           .brush-label { display: none; }
@@ -525,22 +527,22 @@ export default function App() {
               </Card>
 
               <div style={{ display: "flex", flexDirection: "column", background: "#ddd8d0", gap: 1 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr", gap: 1, flex: 1, background: "#ddd8d0" }}>
+                <div className="ind-grid" style={{ gap: 1, background: "#ddd8d0" }}>
                   {/* Var mensual — 2/5 */}
-                  <div style={{ background: sal?.varMensual != null && sal.varMensual >= 0 ? "#f0faf4" : sal?.varMensual != null ? "#fdf0ee" : "white", padding: "1.6rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-                    <div style={{ fontFamily: "monospace", fontSize: "0.55rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Var. mensual real · {sal?.lastLabel}</div>
-                    <div style={{ fontFamily: "Georgia,serif", fontSize: "3.2rem", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1, color: sal?.varMensual == null ? "#9a9088" : sal.varMensual >= 0 ? "#2a7a4a" : "#c0321e" }}>
+                  <div style={{ background: sal?.varMensual != null && sal.varMensual >= 0 ? "#e8f7ef" : sal?.varMensual != null ? "#fde8e4" : "white", padding: "2rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: 180 }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#5a524a", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Var. mensual real · {sal?.lastLabel}</div>
+                    <div style={{ fontFamily: "Georgia,serif", fontSize: "5.5rem", fontWeight: 900, letterSpacing: "-0.05em", lineHeight: 0.9, color: sal?.varMensual == null ? "#9a9088" : sal.varMensual >= 0 ? "#1a6b3a" : "#a82018" }}>
                       {sal?.varMensual != null ? (sal.varMensual >= 0 ? "+" : "") + sal.varMensual.toFixed(1) + "%" : "–"}
                     </div>
-                    <div style={{ fontSize: "0.65rem", color: "#9a9088", marginTop: 10 }}>respecto al mes anterior</div>
+                    <div style={{ fontSize: "0.88rem", color: "#5a524a", marginTop: 16, fontWeight: 500 }}>respecto al mes anterior</div>
                   </div>
                   {/* Var interanual — 2/5 */}
-                  <div style={{ background: sal?.varInteranual != null && sal.varInteranual >= 0 ? "#f0faf4" : sal?.varInteranual != null ? "#fdf0ee" : "white", padding: "1.6rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-                    <div style={{ fontFamily: "monospace", fontSize: "0.55rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Var. interanual real · {sal?.lastLabel}</div>
-                    <div style={{ fontFamily: "Georgia,serif", fontSize: "3.2rem", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1, color: sal?.varInteranual == null ? "#9a9088" : sal.varInteranual >= 0 ? "#2a7a4a" : "#c0321e" }}>
+                  <div style={{ background: sal?.varInteranual != null && sal.varInteranual >= 0 ? "#e8f7ef" : sal?.varInteranual != null ? "#fde8e4" : "white", padding: "2rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: 180 }}>
+                    <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#5a524a", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Var. interanual real · {sal?.lastLabel}</div>
+                    <div style={{ fontFamily: "Georgia,serif", fontSize: "5.5rem", fontWeight: 900, letterSpacing: "-0.05em", lineHeight: 0.9, color: sal?.varInteranual == null ? "#9a9088" : sal.varInteranual >= 0 ? "#1a6b3a" : "#a82018" }}>
                       {sal?.varInteranual != null ? (sal.varInteranual >= 0 ? "+" : "") + sal.varInteranual.toFixed(1) + "%" : "–"}
                     </div>
-                    <div style={{ fontSize: "0.65rem", color: "#9a9088", marginTop: 10 }}>vs mismo mes año anterior</div>
+                    <div style={{ fontSize: "0.88rem", color: "#5a524a", marginTop: 16, fontWeight: 500 }}>vs mismo mes año anterior</div>
                   </div>
                   {/* Tipo de ajuste — 1/5 */}
                   <div style={{ background: "#1a1714", padding: "1.6rem 1rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
