@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend, Brush, ReferenceLine, ReferenceDot,
+  CartesianGrid, Legend, Brush, ReferenceLine, ReferenceDot, Cell,
 } from "recharts";
 
 const URL_SAL =
@@ -27,12 +27,14 @@ const RSHORT = {
   "Regímenes Especiales": "Reg.Esp.",
 };
 const RCOL = {
-  "Enseñanza Inicial Y Primaria": "#1e5f8a",
-  "Enseñanza Media Y Técnica": "#c0321e",
-  "Enseñanza Superior Y Universitaria": "#2a7a4a",
-  "Administración De La Educación": "#d4631a",
-  "Regímenes Especiales": "#7c6a9a",
+  "Enseñanza Inicial Y Primaria": "#2f6f9f",
+  "Enseñanza Media Y Técnica": "#e8892b",
+  "Enseñanza Superior Y Universitaria": "#7b5ea7",
+  "Administración De La Educación": "#a39b91",
+  "Regímenes Especiales": "#3c9a9c",
 };
+// Nombre para mostrar: "Enseñanza Inicial Y Primaria" -> "Enseñanza Inicial y Primaria"
+const RNOMBRE = (r) => r.replace(/ Y /g, " y ").replace(/ De La /g, " de la ");
 
 // ── Utilidades ────────────────────────────────────────────────
 
@@ -488,6 +490,23 @@ const TTip = ({ active, payload, label, fmt }) => {
   );
 };
 
+// Tooltip del gráfico de presupuesto: rubros + total, en billones
+const TTipPres = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  const tot = payload.reduce((s, p) => s + (p.value || 0), 0);
+  const f = (v) => "$" + (v / 1000).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " B";
+  return (
+    <div style={{ background: "#1a1714", border: "1px solid #3d3830", padding: "8px 12px", borderRadius: 2 }}>
+      <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#e8e2d9", marginBottom: 4 }}>{label} · total {f(tot)}</div>
+      {[...payload].reverse().map((p) => (
+        <div key={p.dataKey} style={{ fontFamily: "monospace", fontSize: "0.62rem", color: "#d8d2c9", marginBottom: 2, display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ width: 8, height: 8, background: p.fill, display: "inline-block", borderRadius: 1 }} />{p.name}: {f(p.value)}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── App ───────────────────────────────────────────────────────
 
 export default function App() {
@@ -547,6 +566,15 @@ export default function App() {
         .cargo-toggle button.on .sub { color: #aaa49c; }
         .cargo-toggle .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
         .cargo-note { font-family: monospace; font-size: 0.66rem; color: #9a9088; }
+        .rubros { display: flex; flex-direction: column; }
+        .rubro { display: grid; grid-template-columns: minmax(200px, 2.2fr) 1fr 1fr minmax(180px, 2fr) 1.2fr; gap: 16px; align-items: center; padding: 11px 4px; border-bottom: 1px solid #f0ece6; font-size: 0.85rem; }
+        .rubro-hdr { font-family: monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9a9088; border-bottom: 2px solid #1a1714; padding-top: 0; }
+        .rubro .num { text-align: right; font-family: monospace; font-size: 0.8rem; }
+        .rubro-hdr .num { font-size: 0.58rem; }
+        .rubro-nom { display: flex; align-items: center; font-weight: 500; color: #1a1714; }
+        .rubro-ej { display: flex; align-items: center; gap: 10px; }
+        .rubro-barra { position: relative; flex: 1; height: 10px; background: #ede9e3; border-radius: 2px; }
+        .rubro-lbl { display: none; }
         .frase { margin: 1.6rem 1.5rem 0; padding: 1.3rem 1.6rem; background: white; border-left: 5px solid #d6007a; }
         .frase-k { font-family: monospace; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #d6007a; margin-bottom: 8px; font-weight: 700; }
         .frase-t { font-family: Georgia, serif; font-size: clamp(1.15rem, 2.2vw, 1.55rem); line-height: 1.4; color: #1a1714; margin: 0; }
@@ -569,6 +597,12 @@ export default function App() {
           .hdr-sep { display: none; }
           .hdr-der { text-align: left; }
           .hdr-btn { margin-left: 0; }
+          .rubro-hdr { display: none !important; }
+          .rubro { grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 14px 2px; }
+          .rubro-nom { grid-column: 1 / -1; font-size: 0.95rem; }
+          .rubro-ej { grid-column: 1 / -1; }
+          .rubro .num { text-align: left; white-space: nowrap; font-size: 0.74rem; }
+          .rubro-lbl { display: inline; font-family: system-ui, sans-serif; color: #9a9088; font-size: 0.72rem; }
           .cargo-toggle { width: 100%; }
           .cargo-toggle button { flex: 1 1 100%; justify-content: flex-start; }
           .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -972,29 +1006,36 @@ export default function App() {
               </Card>
             </div>
 
+            {/* Evolución anual del vigente por rubro */}
             <Grid cols="1fr" style={{ marginTop: 1 }}>
               <Card>
-                <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>Serie histórica · deflactado</div>
-                <div style={{ fontFamily: "Georgia,serif", fontSize: "0.95rem", fontWeight: 700, marginBottom: 3 }}>Evolución del Presupuesto Vigente por Rubro</div>
-                <div style={{ fontSize: "0.68rem", color: "#9a9088", marginBottom: 12 }}>Miles de millones de pesos de {pre?.lastA} · áreas apiladas</div>
+                <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>Serie histórica · descontada la inflación</div>
+                <div style={{ fontFamily: "Georgia,serif", fontSize: "1rem", fontWeight: 700, marginBottom: 3 }}>Presupuesto vigente por rubro, año a año</div>
+                <div style={{ fontSize: "0.72rem", color: "#9a9088", marginBottom: 12 }}>
+                  Billones de pesos de {pre?.lastA} (1 billón = un millón de millones) · <span style={{ color: "#1e5f8a" }}>tocá una barra para ver ese año</span>
+                </div>
                 {pre && pre.evolData ? (
                   <>
                     <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={pre.evolData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#ede9e3" />
-                        <XAxis dataKey="ano" tick={{ fontFamily: "monospace", fontSize: 9, fill: "#9a9088" }} tickLine={false} axisLine={false} />
-                        <YAxis tick={{ fontFamily: "monospace", fontSize: 9, fill: "#9a9088" }} tickLine={false} axisLine={false} tickFormatter={(v) => "$" + v + " MM"} width={80} />
-                        <Tooltip content={<TTip fmt={(v) => "$" + v?.toFixed(1) + " MM"} />} />
-                        {Object.entries(RSHORT).map(([full, short]) => (
-                          <Area key={full} type="monotone" dataKey={short} name={short} stroke={RCOL[full]} fill={RCOL[full]} fillOpacity={0.75} stackId="1" isAnimationActive={false} />
+                      <BarChart data={pre.evolData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} onClick={(e) => e && e.activeLabel && setAnoSel(Number(e.activeLabel))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#ede9e3" vertical={false} />
+                        <XAxis dataKey="ano" tick={{ fontFamily: "monospace", fontSize: 10, fill: "#5a524a" }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontFamily: "monospace", fontSize: 9, fill: "#9a9088" }} tickLine={false} axisLine={false} tickFormatter={(v) => "$" + (v / 1000).toLocaleString("es-AR") + " B"} width={52} />
+                        <Tooltip cursor={{ fill: "rgba(26,23,20,0.05)" }} content={<TTipPres />} />
+                        {RUBROS.map((r) => (
+                          <Bar key={r} dataKey={RSHORT[r]} name={RNOMBRE(r)} stackId="1" fill={RCOL[r]} isAnimationActive={false} style={{ cursor: "pointer" }}>
+                            {pre.evolData.map((d) => (
+                              <Cell key={d.ano} fillOpacity={d.ano === anoSel ? 1 : 0.45} />
+                            ))}
+                          </Bar>
                         ))}
                         <Brush dataKey="ano" height={24} stroke="#9a9088" fill="#f5f2ee" travellerWidth={8} />
-                      </AreaChart>
+                      </BarChart>
                     </ResponsiveContainer>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-                      {Object.entries(RSHORT).map(([full, short]) => (
-                        <div key={full} style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "monospace", fontSize: "0.58rem", color: "#9a9088" }}>
-                          <div style={{ width: 10, height: 10, background: RCOL[full], borderRadius: 1 }} />{short}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10 }}>
+                      {RUBROS.map((r) => (
+                        <div key={r} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.72rem", color: "#5a524a" }}>
+                          <div style={{ width: 10, height: 10, background: RCOL[r], borderRadius: 2 }} />{RNOMBRE(r)}
                         </div>
                       ))}
                     </div>
@@ -1005,64 +1046,44 @@ export default function App() {
               </Card>
             </Grid>
 
+            {/* Ejecución por rubro: tabla + barras en un solo bloque */}
             <Grid cols="1fr" style={{ marginTop: 1 }}>
               <Card>
-                <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>Año {anoSel}</div>
-                <div style={{ fontFamily: "Georgia,serif", fontSize: "0.95rem", fontWeight: 700, marginBottom: 3 }}>Vigente vs Devengado por Rubro</div>
-                <div style={{ fontSize: "0.68rem", color: "#9a9088", marginBottom: 12 }}>En miles de millones de pesos de {pre?.lastA}</div>
-                {datosAnio && datosAnio.ejData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={datosAnio.ejData} layout="vertical" margin={{ top: 4, right: 40, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ede9e3" horizontal={false} />
-                      <XAxis type="number" tick={{ fontFamily: "monospace", fontSize: 9, fill: "#9a9088" }} tickLine={false} axisLine={false} tickFormatter={(v) => "$" + v} />
-                      <YAxis type="category" dataKey="rubro" tick={{ fontFamily: "monospace", fontSize: 8, fill: "#9a9088" }} tickLine={false} axisLine={false} width={95} />
-                      <Tooltip content={<TTip fmt={(v) => "$" + v?.toFixed(2) + " MM"} />} />
-                      <Legend wrapperStyle={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088" }} />
-                      <Bar dataKey="vig" name="Vigente"   fill="#9a9088" opacity={0.4} radius={[0, 2, 2, 0]} isAnimationActive={false} />
-                      <Bar dataKey="dev" name="Devengado" fill="#1e5f8a"              radius={[0, 2, 2, 0]} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#c0321e", padding: "1rem" }}>Sin datos para {anoSel}.</div>
-                )}
-              </Card>
-            </Grid>
-
-            <Grid cols="1fr" style={{ marginTop: 1 }}>
-              <Card>
-                <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Detalle · {anoSel}</div>
-                <div style={{ fontFamily: "Georgia,serif", fontSize: "1rem", fontWeight: 700, marginBottom: 16 }}>Ejecución Presupuestaria por Rubro</div>
+                <div style={{ fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 3 }}>
+                  Detalle · {anoSel}{datosAnio?.enCurso ? ` · a ${MESES_LARGO[datosAnio.mes - 1]}` : ""}
+                </div>
+                <div style={{ fontFamily: "Georgia,serif", fontSize: "1rem", fontWeight: 700, marginBottom: 3 }}>Ejecución por rubro</div>
+                <div style={{ fontSize: "0.72rem", color: "#9a9088", marginBottom: 16 }}>
+                  Pesos de {pre?.lastA}{datosAnio?.enCurso ? <> · la línea punteada marca el {fmtPct0(datosAnio.pctAnio)} del año transcurrido</> : ""}
+                </div>
                 {datosAnio && datosAnio.tableRows.length > 0 ? (
-                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", display: "block", width: "100%", maxWidth: "100%" }}>
-                  <table style={{ borderCollapse: "collapse", minWidth: 480, width: "max-content", maxWidth: "100%" }}>
-                    <thead>
-                      <tr>
-                        {["Rubro", "Vigente", "Devengado", "Ejecución", `Var. real vigente vs ${anoSel - 1}`].map((h) => (
-                          <th key={h} style={{ fontFamily: "monospace", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#9a9088", padding: "5px 8px", borderBottom: "1px solid #ddd8d0", textAlign: h === "Rubro" ? "left" : "right", whiteSpace: "nowrap" }}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {datosAnio.tableRows.map((row) => (
-                        <tr key={row.r}>
-                          <td style={{ padding: "7px 8px", borderBottom: "1px solid #f5f2ee", fontWeight: 500, fontSize: "0.78rem" }}>
-                            <span style={{ display: "inline-block", width: 8, height: 8, background: RCOL[row.r] || "#999", borderRadius: 1, marginRight: 6, verticalAlign: "middle" }} />
-                            {row.r}
-                          </td>
-                          <td style={{ padding: "7px 8px", borderBottom: "1px solid #f5f2ee", fontFamily: "monospace", fontSize: "0.7rem", textAlign: "right" }}>{fmtP(row.vig)}</td>
-                          <td style={{ padding: "7px 8px", borderBottom: "1px solid #f5f2ee", fontFamily: "monospace", fontSize: "0.7rem", textAlign: "right" }}>{fmtP(row.dev)}</td>
-                          <td style={{ padding: "7px 8px", borderBottom: "1px solid #f5f2ee", fontFamily: "monospace", fontSize: "0.7rem", textAlign: "right", color: row.ep < 90 ? "#c0321e" : "#2a7a4a", fontWeight: 600 }}>
-                            {row.ep.toFixed(1)}%
-                          </td>
-                          <td style={{ padding: "7px 8px", borderBottom: "1px solid #f5f2ee", fontFamily: "monospace", fontSize: "0.7rem", textAlign: "right", color: row.delta === null ? "#9a9088" : row.delta < 0 ? "#c0321e" : "#2a7a4a", fontWeight: 600 }}>
-                            {row.delta === null ? "–" : (row.delta >= 0 ? "+" : "") + row.delta.toFixed(1) + "%"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="rubros">
+                    <div className="rubro rubro-hdr">
+                      <div>Rubro</div><div className="num">Vigente</div><div className="num">Devengado</div><div>Ejecución</div><div className="num">Var. real vigente vs {anoSel - 1}</div>
+                    </div>
+                    {datosAnio.tableRows.map((row) => {
+                      const atrasado = datosAnio.enCurso ? row.ep < datosAnio.pctAnio - 5 : row.ep < 90;
+                      return (
+                        <div key={row.r} className="rubro">
+                          <div className="rubro-nom">
+                            <span style={{ display: "inline-block", width: 10, height: 10, background: RCOL[row.r], borderRadius: 2, marginRight: 8, flexShrink: 0 }} />
+                            {RNOMBRE(row.r)}
+                          </div>
+                          <div className="num"><span className="rubro-lbl">Vigente </span>{fmtP(row.vig)}</div>
+                          <div className="num"><span className="rubro-lbl">Devengado </span>{fmtP(row.dev)}</div>
+                          <div className="rubro-ej">
+                            <div className="rubro-barra">
+                              <div style={{ position: "absolute", inset: 0, width: `${Math.min(row.ep, 100)}%`, background: RCOL[row.r], borderRadius: 2 }} />
+                              {datosAnio.enCurso && <div style={{ position: "absolute", left: `${datosAnio.pctAnio}%`, top: -4, bottom: -4, borderLeft: "2px dashed #1a1714" }} />}
+                            </div>
+                            <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "0.85rem", color: atrasado ? "#c0321e" : "#1a1714", minWidth: 52, textAlign: "right" }}>{fmtPct0(row.ep)}</span>
+                          </div>
+                          <div className="num" style={{ fontWeight: 700, color: colVar(row.delta) }}>
+                            <span className="rubro-lbl">Var. real vs {anoSel - 1} </span>{fmtPct(row.delta)}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#c0321e", padding: "1rem" }}>Sin datos para {anoSel}.</div>
@@ -1070,6 +1091,7 @@ export default function App() {
               </Card>
             </Grid>
           </div>
+
 
           {/* FOOTER */}
           <div style={{ padding: "1.5rem", marginTop: "1.5rem", borderTop: "1px solid #ddd8d0", display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: "0.6rem", color: "#9a9088" }}>
